@@ -1,59 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
+  <meta charset="UTF-8" />
   <title>Votação de Imagens</title>
   <style>
-    img { max-width: 300px; display: block; margin-bottom: 10px; }
-    .item { margin-bottom: 40px; border-bottom: 1px solid #ccc; padding-bottom: 20px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f8f8f8;
+    }
+    h1 {
+      text-align: center;
+    }
+    .image-container {
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+    }
+    img {
+      max-width: 100%;
+      border-radius: 5px;
+      margin-top: 10px;
+    }
+    .gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .voted-message {
+      text-align: center;
+      font-size: 18px;
+      color: green;
+    }
   </style>
 </head>
 <body>
-  <h1>Vote na sua imagem favorita</h1>
-  <div id="content"></div>
 
-  <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRbJ6Jv71Ut09dddq-p7xAElfSkATlotEHjwog3EHOsQ5fCsHPzl5UhHREKMeRm4cwywBXpb6--3pey/pubhtml?gid=840361445&single=true";
-    const votedKey = 'ja_votou';
+<h1>Vote na sua imagem favorita</h1>
+<div id="gallery" class="gallery"></div>
 
-    fetch(sheetURL)
-      .then(res => res.json())
-      .then(data => {
-        const container = document.getElementById('content');
-        const jaVotou = localStorage.getItem(votedKey);
-        
-        if (jaVotou) {
-          container.innerHTML = `<p>Você já votou! Obrigado por participar.</p>`;
-          return;
-        }
+<script>
+  const sheetUrl = "https://opensheet.elk.sh/2PACX-1vRbJ6Jv71Ut09dddq-p7xAElfSkATlotEHjwog3EHOsQ5fCsHPzl5UhHREKMeRm4cwywBXpb6--3pey/Votacao";
+  const votedKey = 'imagem_votada';
 
-        data.forEach((row, index) => {
-          const nome = row['Nome'] || row['Your name'] || row['C'] || 'Desconhecido';
-          const titulo = row['Título'] || row['D'] || 'Sem título';
-          const link = row['Link da Imagem'] || row['E'];
-          const match = link.match(/[-\w]{25,}/);
-          const id = match ? match[0] : null;
-          const imagem = id ? `https://drive.google.com/uc?export=view&id=${id}` : '';
+  fetch(sheetUrl)
+    .then(res => res.json())
+    .then(data => {
+      const voted = localStorage.getItem(votedKey);
+      const gallery = document.getElementById("gallery");
 
-          if (!imagem) return;
+      if (voted) {
+        gallery.innerHTML = `<p class="voted-message">Você já votou. Obrigado pela sua participação!</p>`;
+        return;
+      }
 
-          const div = document.createElement('div');
-          div.className = 'item';
-          div.innerHTML = `
-            <h3>${titulo}</h3>
-            <p>por ${nome}</p>
-            <img src="${imagem}" alt="${titulo}">
-            <button onclick="votar(${index})">Votar</button>
-          `;
-          container.appendChild(div);
-        });
+      data.forEach((item, index) => {
+        const nome = item["Nome"] || "Participante";
+        const titulo = item["Título da Imagem"] || "Sem título";
+        const link = item["Link da Imagem"];
+
+        // Captura o ID da imagem no Drive
+        const match = link.match(/[-\w]{25,}/);
+        if (!match) return;
+        const fileId = match[0];
+        const imgUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+
+        const container = document.createElement("div");
+        container.className = "image-container";
+        container.innerHTML = `
+          <h3>${titulo}</h3>
+          <p>por <strong>${nome}</strong></p>
+          <img src="${imgUrl}" alt="${titulo}">
+          <button onclick="votar(${index})">Votar nesta imagem</button>
+        `;
+        gallery.appendChild(container);
       });
+    });
 
-    function votar(index) {
-      alert("Obrigado pelo seu voto!");
-      localStorage.setItem('ja_votou', true);
-      location.reload();
-      // Opcional: enviar para um Google Form invisível (com Apps Script)
-    }
-  </script>
+  function votar(index) {
+    localStorage.setItem('imagem_votada', index);
+    alert("Obrigado pelo seu voto!");
+    location.reload();
+  }
+</script>
+
 </body>
 </html>
