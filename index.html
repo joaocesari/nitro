@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Votação de Imagens</title>
+  <style>
+    img { max-width: 300px; display: block; margin-bottom: 10px; }
+    .item { margin-bottom: 40px; border-bottom: 1px solid #ccc; padding-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Vote na sua imagem favorita</h1>
+  <div id="content"></div>
+
+  <script>
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRbJ6Jv71Ut09dddq-p7xAElfSkATlotEHjwog3EHOsQ5fCsHPzl5UhHREKMeRm4cwywBXpb6--3pey/pubhtml?gid=840361445&single=true";
+    const votedKey = 'ja_votou';
+
+    fetch(sheetURL)
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('content');
+        const jaVotou = localStorage.getItem(votedKey);
+        
+        if (jaVotou) {
+          container.innerHTML = `<p>Você já votou! Obrigado por participar.</p>`;
+          return;
+        }
+
+        data.forEach((row, index) => {
+          const nome = row['Nome'] || row['Your name'] || row['C'] || 'Desconhecido';
+          const titulo = row['Título'] || row['D'] || 'Sem título';
+          const link = row['Link da Imagem'] || row['E'];
+          const match = link.match(/[-\w]{25,}/);
+          const id = match ? match[0] : null;
+          const imagem = id ? `https://drive.google.com/uc?export=view&id=${id}` : '';
+
+          if (!imagem) return;
+
+          const div = document.createElement('div');
+          div.className = 'item';
+          div.innerHTML = `
+            <h3>${titulo}</h3>
+            <p>por ${nome}</p>
+            <img src="${imagem}" alt="${titulo}">
+            <button onclick="votar(${index})">Votar</button>
+          `;
+          container.appendChild(div);
+        });
+      });
+
+    function votar(index) {
+      alert("Obrigado pelo seu voto!");
+      localStorage.setItem('ja_votou', true);
+      location.reload();
+      // Opcional: enviar para um Google Form invisível (com Apps Script)
+    }
+  </script>
+</body>
+</html>
