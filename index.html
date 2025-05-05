@@ -1,98 +1,104 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Votação de Imagens</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
-      background: #f8f8f8;
+      background: #f4f4f4;
     }
     h1 {
       text-align: center;
     }
-    .image-container {
-      border: 1px solid #ccc;
-      background: #fff;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      max-width: 400px;
-    }
-    img {
-      max-width: 100%;
-      border-radius: 5px;
-      margin-top: 10px;
-    }
-    .gallery {
-      display: flex;
-      flex-wrap: wrap;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
       gap: 20px;
-      justify-content: center;
+      margin-top: 20px;
+    }
+    .card {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .card img {
+      max-width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+      border-radius: 4px;
     }
     button {
       margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
+      padding: 8px 12px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
     }
-    .voted-message {
-      text-align: center;
-      font-size: 18px;
-      color: green;
+    button:disabled {
+      background: gray;
     }
   </style>
 </head>
 <body>
+  <h1>Vote na sua imagem favorita</h1>
+  <div id="content" class="grid"></div>
 
-<h1>Vote na sua imagem favorita</h1>
-<div id="gallery" class="gallery"></div>
+  <script>
+    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRbJ6Jv71Ut09dddq-p7xAElfSkATlotEHjwog3EHOsQ5fCsHPzl5UhHREKMeRm4cwywBXpb6--3pey/pub?output=csv';
 
-<script>
-  const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRbJ6Jv71Ut09dddq-p7xAElfSkATlotEHjwog3EHOsQ5fCsHPzl5UhHREKMeRm4cwywBXpb6--3pey/pubhtml";
-  const votedKey = 'imagem_votada';
+    async function loadImages() {
+      const res = await fetch(sheetURL);
+      const text = await res.text();
+      const rows = text.split('\n').map(row => row.split(','));
 
-  fetch(sheetUrl)
-    .then(res => res.json())
-    .then(data => {
-      const voted = localStorage.getItem(votedKey);
-      const gallery = document.getElementById("gallery");
+      const content = document.getElementById('content');
+      const header = rows.shift();
 
-      if (voted) {
-        gallery.innerHTML = `<p class="voted-message">Você já votou. Obrigado pela sua participação!</p>`;
-        return;
-      }
+      rows.forEach((cols, index) => {
+        const nome = cols[2];
+        const titulo = cols[3];
+        const imgUrl = cols[4];
+        const key = `voted_${index}`;
 
-      data.forEach((item, index) => {
-        const nome = item["Nome"] || "Participante";
-        const titulo = item["Título da Imagem"] || "Sem título";
-        const link = item["Link da Imagem"];
+        const div = document.createElement('div');
+        div.className = 'card';
 
-        // Captura o ID da imagem no Drive
-        const match = link.match(/[-\w]{25,}/);
-        if (!match) return;
-        const fileId = match[0];
-        const imgUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+        const img = document.createElement('img');
+        img.src = imgUrl.replace(/\"/g, '');
+        img.alt = titulo;
 
-        const container = document.createElement("div");
-        container.className = "image-container";
-        container.innerHTML = `
-          <h3>${titulo}</h3>
-          <p>por <strong>${nome}</strong></p>
-          <img src="${imgUrl}" alt="${titulo}">
-          <button onclick="votar(${index})">Votar nesta imagem</button>
-        `;
-        gallery.appendChild(container);
+        const h3 = document.createElement('h3');
+        h3.innerText = titulo;
+
+        const p = document.createElement('p');
+        p.innerText = `Participante: ${nome}`;
+
+        const btn = document.createElement('button');
+        btn.innerText = localStorage.getItem(key) ? 'Voto registrado' : 'Votar';
+        btn.disabled = localStorage.getItem(key);
+        btn.onclick = () => {
+          alert(`Voto registrado para ${titulo}`);
+          localStorage.setItem(key, 'votado');
+          btn.innerText = 'Voto registrado';
+          btn.disabled = true;
+        };
+
+        div.appendChild(img);
+        div.appendChild(h3);
+        div.appendChild(p);
+        div.appendChild(btn);
+        content.appendChild(div);
       });
-    });
+    }
 
-  function votar(index) {
-    localStorage.setItem('imagem_votada', index);
-    alert("Obrigado pelo seu voto!");
-    location.reload();
-  }
-</script>
-
+    loadImages();
+  </script>
 </body>
 </html>
